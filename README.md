@@ -7,9 +7,9 @@ SE4458 Assignment 2, Group 1. A deployable address book backend built with ASP.N
 | Item | URL |
 | --- | --- |
 | Source code | https://github.com/MuhammetDemir0/se4458-address-book-api |
-| Live Swagger | Add `https://YOUR-SERVICE-URL/swagger` after deployment |
+| Live Swagger | https://se4458-address-book-api-bqmi.onrender.com/swagger |
 
-The live URL will be added after deployment is verified.
+Both links point to the published project.
 
 ## Features
 
@@ -78,8 +78,7 @@ python tests/smoke.py
 
 1. Push this directory to a GitHub repository, keeping `Dockerfile` and `render.yaml` at the repository root.
 2. In Render, choose **New > Blueprint**, connect that repository, and apply `render.yaml`.
-3. Wait for the `/health` check to pass. Open `https://YOUR-SERVICE-URL/swagger` and create a contact using **Try it out**.
-4. Replace the two pending links in **Submission links** with the actual repository and Swagger URLs.
+3. Wait for the `/health` check to pass. Open the live Swagger URL above and create a contact using **Try it out**.
 
 The Dockerfile also works on any Docker hosting service. The container listens on port 8080. No database service or secret is required.
 
