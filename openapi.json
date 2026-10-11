@@ -1,0 +1,121 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Address Book API",
+    "version": "1.0.0",
+    "description": "SE4458 Assignment 2. A REST API with process-local in-memory storage. Data resets after restart or redeployment."
+  },
+  "servers": [{ "url": "/", "description": "Current host" }],
+  "tags": [{ "name": "Contacts" }, { "name": "Operations" }],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Operations"], "summary": "Check service health", "operationId": "getHealth",
+        "responses": { "200": { "description": "Service is running" } }
+      }
+    },
+    "/api/v1/contacts": {
+      "get": {
+        "tags": ["Contacts"], "summary": "List, search, filter, sort, and paginate contacts",
+        "operationId": "listContacts",
+        "parameters": [
+          { "name": "search", "in": "query", "description": "Case-insensitive match in name, email, phone, or city", "schema": { "type": "string" } },
+          { "name": "favorite", "in": "query", "description": "Show only favorite or nonfavorite contacts", "schema": { "type": "boolean" } },
+          { "name": "sortBy", "in": "query", "schema": { "type": "string", "enum": ["name", "createdAt", "updatedAt"], "default": "name" } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"], "default": "asc" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "default": 1 } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 } }
+        ],
+        "responses": {
+          "200": { "description": "A page of contacts", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ContactPage" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      },
+      "post": {
+        "tags": ["Contacts"], "summary": "Create a contact", "operationId": "createContact",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ContactInput" }, "example": { "name": "Ada Lovelace", "email": "ada@example.com", "phone": "+90 555 123 4567", "address": { "street": "1 Example Street", "city": "Izmir", "country": "Turkey", "postalCode": "35000" }, "notes": "Classmate", "isFavorite": false } } } },
+        "responses": {
+          "201": { "description": "Created; Location header points to the contact", "headers": { "Location": { "schema": { "type": "string" } } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Contact" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/api/v1/contacts/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/ContactId" }],
+      "get": {
+        "tags": ["Contacts"], "summary": "Get a contact", "operationId": "getContact",
+        "responses": { "200": { "description": "The contact", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Contact" } } } }, "404": { "$ref": "#/components/responses/NotFound" } }
+      },
+      "put": {
+        "tags": ["Contacts"], "summary": "Replace a contact", "operationId": "replaceContact",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ContactInput" } } } },
+        "responses": { "200": { "description": "Updated contact", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Contact" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      },
+      "delete": {
+        "tags": ["Contacts"], "summary": "Delete a contact", "operationId": "deleteContact",
+        "responses": { "204": { "description": "Deleted" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    },
+    "/api/v1/contacts/{id}/favorite": {
+      "parameters": [{ "$ref": "#/components/parameters/ContactId" }],
+      "patch": {
+        "tags": ["Contacts"], "summary": "Set favorite status", "operationId": "setFavorite",
+        "description": "Sending the same value again has the same resulting state.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FavoriteInput" }, "example": { "isFavorite": true } } } },
+        "responses": { "200": { "description": "Updated contact", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Contact" } } } }, "400": { "$ref": "#/components/responses/BadRequest" }, "404": { "$ref": "#/components/responses/NotFound" } }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "ContactId": { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "Contact ID" }
+    },
+    "responses": {
+      "BadRequest": { "description": "Invalid query or body", "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } } },
+      "NotFound": { "description": "Contact does not exist", "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } } }
+    },
+    "schemas": {
+      "Address": {
+        "type": "object", "required": ["street", "city", "country"],
+        "properties": {
+          "street": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "city": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "country": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "postalCode": { "type": "string", "nullable": true, "maxLength": 20 }
+        }
+      },
+      "ContactInput": {
+        "type": "object", "required": ["name", "email", "phone", "address"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "email": { "type": "string", "format": "email", "maxLength": 254 },
+          "phone": { "type": "string", "minLength": 1, "maxLength": 40 },
+          "address": { "$ref": "#/components/schemas/Address" },
+          "notes": { "type": "string", "nullable": true, "maxLength": 1000 },
+          "isFavorite": { "type": "boolean", "default": false }
+        }
+      },
+      "FavoriteInput": { "type": "object", "required": ["isFavorite"], "properties": { "isFavorite": { "type": "boolean" } } },
+      "Contact": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ContactInput" },
+          { "type": "object", "required": ["id", "createdAt", "updatedAt"], "properties": {
+            "id": { "type": "string", "format": "uuid" },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+          } }
+        ]
+      },
+      "ContactPage": {
+        "type": "object", "required": ["items", "total", "page", "pageSize"],
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/Contact" } },
+          "total": { "type": "integer", "minimum": 0 },
+          "page": { "type": "integer", "minimum": 1 },
+          "pageSize": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "Problem": { "type": "object", "properties": { "type": { "type": "string" }, "title": { "type": "string" }, "status": { "type": "integer" }, "detail": { "type": "string" }, "errors": { "type": "object" } } }
+    }
+  }
+}

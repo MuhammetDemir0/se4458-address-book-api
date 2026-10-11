@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: se4458-address-book-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
